@@ -1,0 +1,57 @@
+:root {
+    font-family: sans;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100dvh;
+    width: 100dvw;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+}
+
+body > div {
+    align-items: center;
+    justify-content: center;
+    display: flex;
+}
+.compass-outer {
+    flex-grow: 1;
+}
+
+.error {
+    background: #ff0000bb;
+}
+
+#distance {
+    display: none;
+    font-size: 5em;
+}
+#name {
+    display: none;
+    font-size: 2em;
+}
+
+#compass {
+    display: none;
+    font-size: 15em;
+}
+
+#status {
+    display: none;
+    font-size: 2em;
+}
+
+#list {
+    margin-top: 1lh;
+    display: none;
+}
+
+#list > summary {
+    text-align: center;
+}
