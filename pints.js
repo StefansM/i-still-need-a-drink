@@ -62,7 +62,7 @@ class Application {
     getElemOrFail(elemId) {
         const elem = document.getElementById(elemId);
         if (elem === null) {
-            this.setStatus(`Fatal: Could not locate #${elemid}.`, "error", true);
+            this.setStatus(`Fatal: Could not locate #${elemId}.`, "error", true);
         }
         return elem;
     }
@@ -98,7 +98,7 @@ class Application {
 
         const overPassQuery = `[out:json][timeout:25];\n`
             + `nwr["amenity"="pub"]`
-            + `(around:3000,${this.currentLocation.latitude},${this.currentLocation.longitude});\n`
+            + `(around:1000,${this.currentLocation.latitude},${this.currentLocation.longitude});\n`
             + `out center;\n`;
         const params = new URLSearchParams();
         params.append("data", overPassQuery);
@@ -217,7 +217,7 @@ class Application {
                 input.setAttribute("checked", "true");
             }
 
-            input.addEventListener("change", (event) => {
+            input.addEventListener("change", () => {
                 this.selectedPubId = pub.id;
                 this.updateUI();
             });
@@ -288,7 +288,7 @@ class Application {
             this.statusPane.style.display = "block";
         }
         if (fatal) {
-            throw new Error(error);
+            throw new Error(msg);
         }
     }
 
