@@ -98,7 +98,7 @@ class Application {
 
         const overPassQuery = `[out:json][timeout:25];\n`
             + `nwr["amenity"="pub"]`
-            + `(around:1000,${this.currentLocation.latitude},${this.currentLocation.longitude});\n`
+            + `(around:3000,${this.currentLocation.latitude},${this.currentLocation.longitude});\n`
             + `out center;\n`;
         const params = new URLSearchParams();
         params.append("data", overPassQuery);
@@ -140,15 +140,25 @@ class Application {
             }
         }
 
-        const dist = (p) => haversineDistance(
-            this.currentLocation.latitude,
-            this.currentLocation.longitude,
-            p.latitude,
-            p.longitude
-        );
-        const pubs = this.nearbyPubs.toSorted((a, b) => dist(a) - dist(b));
+        const pubs = this.nearbyPubs.toSorted(this.#distanceSort.bind(this));
         const closestPub = pubs[0];
         return closestPub;
+    }
+
+    #distanceSort(pub1, pub2) {
+        const d1 = haversineDistance(
+            this.currentLocation.latitude,
+            this.currentLocation.longitude,
+            pub1.latitude,
+            pub1.longitude
+        );
+        const d2 = haversineDistance(
+            this.currentLocation.latitude,
+            this.currentLocation.longitude,
+            pub2.latitude,
+            pub2.longitude
+        );
+        return d1 - d2;
     }
 
     updateBearingUI() {
@@ -214,18 +224,19 @@ class Application {
 
             const a = document.createElement("a");
             a.setAttribute("href", this.mapsHref(pub));
-            a.appendChild(document.createTextNode(pub.name));
+            a.appendChild(document.createTextNode(pub.name ?? "Unnamed Pub"));
 
             li.appendChild(input);
             li.appendChild(a);
-            li.appendChild(document.createTextNode(` ${distanceStr}`));
+            li.appendChild(document.createTextNode(` (${distanceStr})`));
 
             return li;
         };
         const oldUl = elem.getElementsByTagName("ul")[0];
         const newUl = document.createElement("ul");
 
-        const linkElems = this.nearbyPubs.map(createLinkElem);
+        const pubs = this.nearbyPubs.toSorted(this.#distanceSort.bind(this));
+        const linkElems = pubs.map(createLinkElem);
         for (const elem of linkElems) {
             newUl.appendChild(elem);
         }
@@ -240,7 +251,7 @@ class Application {
 
         if (meters > 1000) {
             distanceStr = (meters / 1000).toFixed(2);
-            let units = "km";
+            units = "km";
         }
         return `${distanceStr}${units}`;
     }
