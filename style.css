@@ -10,7 +10,8 @@ body {
     width: 100dvw;
 }
 
-body, html {
+body,
+html {
     margin: 0;
     padding: 0;
     display: flex;
@@ -27,7 +28,7 @@ body > div {
 
 .compass-outer {
     flex-grow: 1;
-    align-items:center;
+    align-items: center;
     justify-content: center;
     display: flex;
 }

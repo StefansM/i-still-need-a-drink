@@ -7,7 +7,7 @@ function coordStr(loc) {
 }
 
 function degToRad(deg) {
-    return deg * Math.PI / 180;
+    return (deg * Math.PI) / 180;
 }
 
 function haversineFunc(theta) {
@@ -15,22 +15,25 @@ function haversineFunc(theta) {
 }
 
 function haversineDistance(lat1, lon1, lat2, lon2) {
-    const haversineGcd = haversineFunc(lat2 - lat1) + (
-            Math.cos(degToRad(lat1)) *
+    const haversineGcd =
+        haversineFunc(lat2 - lat1) +
+        Math.cos(degToRad(lat1)) *
             Math.cos(degToRad(lat2)) *
-            haversineFunc(lon2 - lon1)
-    );
+            haversineFunc(lon2 - lon1);
     const gcd = Math.asin(Math.sqrt(haversineGcd));
     const radiusMeters = 6371e3;
     return 2 * radiusMeters * gcd;
 }
 
 function bearingBetween(lat1, lon1, lat2, lon2) {
-    const y = Math.sin(degToRad(lon2-lon1)) * Math.cos(degToRad(lat2));
-    const x = Math.cos(degToRad(lat1)) * Math.sin(degToRad(lat2)) -
-        Math.sin(degToRad(lat1)) * Math.cos(degToRad(lat2)) * Math.cos(degToRad(lon2 - lon1));
+    const y = Math.sin(degToRad(lon2 - lon1)) * Math.cos(degToRad(lat2));
+    const x =
+        Math.cos(degToRad(lat1)) * Math.sin(degToRad(lat2)) -
+        Math.sin(degToRad(lat1)) *
+            Math.cos(degToRad(lat2)) *
+            Math.cos(degToRad(lon2 - lon1));
     const theta = Math.atan2(y, x);
-    const bearing = (theta * 180 / Math.PI + 360) % 360;
+    const bearing = ((theta * 180) / Math.PI + 360) % 360;
     return bearing;
 }
 
@@ -56,13 +59,19 @@ class Application {
 
         this.setStatus("Fetching location", "info");
         addEventListener("deviceorientationabsolute", this._onHeading);
-        this.watchId = navigator.geolocation.watchPosition(this.setCoords.bind(this));
+        this.watchId = navigator.geolocation.watchPosition(
+            this.setCoords.bind(this),
+        );
     }
 
     getElemOrFail(elemId) {
         const elem = document.getElementById(elemId);
         if (elem === null) {
-            this.setStatus(`Fatal: Could not locate #${elemId}.`, "error", true);
+            this.setStatus(
+                `Fatal: Could not locate #${elemId}.`,
+                "error",
+                true,
+            );
         }
         return elem;
     }
@@ -81,35 +90,46 @@ class Application {
 
         if (oldCoords !== null) {
             const distanceChange = haversineDistance(
-                this.currentLocation.latitude, this.currentLocation.longitude,
-                oldCoords.latitude, oldCoords.longitude
+                this.currentLocation.latitude,
+                this.currentLocation.longitude,
+                oldCoords.latitude,
+                oldCoords.longitude,
             );
             if (distanceChange < 250) {
                 return;
             }
         }
         if (!this._pendingFetch) {
-            this._pendingFetch = this.fetchNearbyPubs().finally(() => {this._pendingFetch = null;});
+            this._pendingFetch = this.fetchNearbyPubs().finally(() => {
+                this._pendingFetch = null;
+            });
         }
     }
 
     async fetchNearbyPubs() {
         this.setStatus("Fetching nearby pubs", "info");
 
-        const overPassQuery = `[out:json][timeout:25];\n`
-            + `nwr["amenity"="pub"]`
-            + `(around:1000,${this.currentLocation.latitude},${this.currentLocation.longitude});\n`
-            + `out center;\n`;
+        const overPassQuery =
+            `[out:json][timeout:25];\n` +
+            `nwr["amenity"="pub"]` +
+            `(around:1000,${this.currentLocation.latitude},${this.currentLocation.longitude});\n` +
+            `out center;\n`;
         const params = new URLSearchParams();
         params.append("data", overPassQuery);
 
-        const response = await fetch(`https://overpass-api.de/api/interpreter?${params}`);
+        const response = await fetch(
+            `https://overpass-api.de/api/interpreter?${params}`,
+        );
         if (!response.ok) {
-            this.setStatus(`Error fetching local pubs: ${response.status}`, "error", false);
+            this.setStatus(
+                `Error fetching local pubs: ${response.status}`,
+                "error",
+                false,
+            );
             return;
         }
         const json = await response.json();
-        const results = (json?.elements ?? []).map(r => {
+        const results = (json?.elements ?? []).map((r) => {
             if ("center" in r) {
                 return {
                     latitude: r["center"]["lat"],
@@ -134,7 +154,9 @@ class Application {
 
     selectedPub() {
         if (this.selectedPubId) {
-            const pub = this.nearbyPubs.find((p) => p.id === this.selectedPubId);
+            const pub = this.nearbyPubs.find(
+                (p) => p.id === this.selectedPubId,
+            );
             if (pub !== undefined) {
                 return pub;
             }
@@ -150,19 +172,23 @@ class Application {
             this.currentLocation.latitude,
             this.currentLocation.longitude,
             pub1.latitude,
-            pub1.longitude
+            pub1.longitude,
         );
         const d2 = haversineDistance(
             this.currentLocation.latitude,
             this.currentLocation.longitude,
             pub2.latitude,
-            pub2.longitude
+            pub2.longitude,
         );
         return d1 - d2;
     }
 
     updateBearingUI() {
-        if (!this.currentLocation || this.nearbyPubs === null || this.nearbyPubs.length === 0) {
+        if (
+            !this.currentLocation ||
+            this.nearbyPubs === null ||
+            this.nearbyPubs.length === 0
+        ) {
             return;
         }
         const ourLat = this.currentLocation.latitude;
@@ -170,7 +196,12 @@ class Application {
 
         const closestPub = this.selectedPub();
 
-        const bearing = bearingBetween(ourLat, ourLon, closestPub.latitude, closestPub.longitude);
+        const bearing = bearingBetween(
+            ourLat,
+            ourLon,
+            closestPub.latitude,
+            closestPub.longitude,
+        );
 
         const relBearing = (bearing - this.currentHeading + 360) % 360;
         const shortRelBearing = ((relBearing + 540) % 360) - 180;
@@ -179,7 +210,11 @@ class Application {
     }
 
     updateUI() {
-        if (!this.currentLocation || this.nearbyPubs === null || this.nearbyPubs.length === 0) {
+        if (
+            !this.currentLocation ||
+            this.nearbyPubs === null ||
+            this.nearbyPubs.length === 0
+        ) {
             return;
         }
         this.clearStatus();
@@ -191,7 +226,12 @@ class Application {
 
         const closestPub = this.selectedPub();
 
-        const distance = haversineDistance(ourLat, ourLon, closestPub.latitude, closestPub.longitude);
+        const distance = haversineDistance(
+            ourLat,
+            ourLon,
+            closestPub.latitude,
+            closestPub.longitude,
+        );
 
         this.setDistance(distance);
         this.setName(closestPub);
@@ -206,11 +246,16 @@ class Application {
 
         const elem = this.pubListElem;
         const createLinkElem = (pub) => {
-            const distance = haversineDistance(lat, lon, pub.latitude, pub.longitude);
+            const distance = haversineDistance(
+                lat,
+                lon,
+                pub.latitude,
+                pub.longitude,
+            );
             const distanceStr = this.distanceStr(distance);
 
             const li = document.createElement("li");
-            const input = document.createElement("input")
+            const input = document.createElement("input");
             input.setAttribute("name", "selected-pub");
             input.setAttribute("type", "radio");
             if (this.selectedPubId === pub.id) {
@@ -262,7 +307,7 @@ class Application {
     }
 
     mapsHref(pub) {
-        const mapUrl = new URL("https://www.google.com/maps/dir/")
+        const mapUrl = new URL("https://www.google.com/maps/dir/");
         mapUrl.searchParams.append("api", 1);
         mapUrl.searchParams.append("origin", coordStr(this.currentLocation));
         mapUrl.searchParams.append("destination", coordStr(pub));
@@ -304,4 +349,3 @@ class Application {
 }
 
 const application = new Application();
-
