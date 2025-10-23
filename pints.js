@@ -38,6 +38,9 @@ function bearingBetween(lat1, lon1, lat2, lon2) {
 }
 
 class Application {
+    #pendingFetch = null;
+    #onHeading = null;
+
     constructor() {
         this.statusPane = this.getElemOrFail("status");
         this.compassDiv = this.getElemOrFail("compass");
@@ -54,11 +57,10 @@ class Application {
         this.nearbyPubs = null;
         this.selectedPubId = null;
 
-        this._pendingFetch = null;
-        this._onHeading = this.setHeading.bind(this);
+        this.#onHeading = this.setHeading.bind(this);
 
         this.setStatus("Fetching location", "info");
-        addEventListener("deviceorientationabsolute", this._onHeading);
+        addEventListener("deviceorientationabsolute", this.#onHeading);
         this.watchId = navigator.geolocation.watchPosition(
             this.setCoords.bind(this),
         );
@@ -99,9 +101,9 @@ class Application {
                 return;
             }
         }
-        if (!this._pendingFetch) {
-            this._pendingFetch = this.fetchNearbyPubs().finally(() => {
-                this._pendingFetch = null;
+        if (!this.#pendingFetch) {
+            this.#pendingFetch = this.fetchNearbyPubs().finally(() => {
+                this.#pendingFetch = null;
             });
         }
     }
@@ -185,7 +187,8 @@ class Application {
 
     updateBearingUI() {
         if (
-            !this.currentLocation ||
+            this.currentHeading === null ||
+            this.currentLocation === null ||
             this.nearbyPubs === null ||
             this.nearbyPubs.length === 0
         ) {
@@ -210,11 +213,16 @@ class Application {
     }
 
     updateUI() {
-        if (
-            !this.currentLocation ||
-            this.nearbyPubs === null ||
-            this.nearbyPubs.length === 0
-        ) {
+        if (this.currentLocation === null) {
+            this.setStatus("Could not find current location.", "error");
+            return;
+        }
+        if (this.nearbyPubs === null || this.nearbyPubs.length === 0) {
+            this.setStatus("Couldn't find any nearby pubs!", "info");
+            this.nameDiv.style.display = "none";
+            this.compassDiv.style.display = "none";
+            this.pubListElem.style.display = "none";
+            this.distanceDiv.style.display = "none";
             return;
         }
         this.clearStatus();
@@ -258,9 +266,7 @@ class Application {
             const input = document.createElement("input");
             input.setAttribute("name", "selected-pub");
             input.setAttribute("type", "radio");
-            if (this.selectedPubId === pub.id) {
-                input.setAttribute("checked", "true");
-            }
+            input.checked = this.selectedPubId === pub.id;
 
             input.addEventListener("change", () => {
                 this.selectedPubId = pub.id;
@@ -316,10 +322,12 @@ class Application {
     }
 
     setName(closestPub) {
-        const name = closestPub.name ?? `Unnamed Pub`;
-        this.nameDiv.innerHTML = `
-            <a href="${this.mapsHref(closestPub)}">${name}</a>
-        `;
+        const a = document.createElement("a");
+        a.href = this.mapsHref(closestPub);
+        a.appendChild(
+            document.createTextNode(closestPub.name ?? "Unnamed Pub"),
+        );
+        this.nameDiv.replaceChildren(a);
         this.nameDiv.style.display = "block";
     }
 
@@ -343,7 +351,7 @@ class Application {
     }
 
     dispose() {
-        removeEventListener("deviceorientationabsolute", this._onHeading);
+        removeEventListener("deviceorientationabsolute", this.#onHeading);
         navigator.geolocation.clearWatch(this.watchId);
     }
 }

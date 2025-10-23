@@ -64,3 +64,7 @@ body > div {
 #list > summary {
     text-align: center;
 }
+
+#list > ul {
+    list-style-type: none;
+}
